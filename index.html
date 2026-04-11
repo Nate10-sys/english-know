@@ -1327,6 +1327,12 @@
             document.getElementById('back-hebrew').textContent = word.hebrew;
 
             updateWordDots();
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const utt1 = new SpeechSynthesisUtterance(word.word);
+                utt1.lang = "en-US"; utt1.rate = 0.85;
+                window.speechSynthesis.speak(utt1);
+            }
         }
 
         document.getElementById('flashcard').addEventListener('click', function() {
@@ -1518,6 +1524,13 @@
                 if (i === saturdayCurrentWordIndex) dot.classList.add('active');
                 if (saturdayVocabStatus[i] === 'done') dot.classList.add('completed');
             });
+
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const utt2 = new SpeechSynthesisUtterance(word.word);
+                utt2.lang = 'en-US'; utt2.rate = 0.85;
+                window.speechSynthesis.speak(utt2);
+            }
         }
 
         document.getElementById('review-flashcard').addEventListener('click', function() {
