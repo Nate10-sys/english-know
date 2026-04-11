@@ -785,7 +785,9 @@
 
                         <div class="sample-answer" id="sample-answer"></div>
 
-                        <button class="btn" id="mark-writing-complete" style="margin-top: 20px;">✓ סמן כהושלם</button>
+                        <button class="btn" id="check-writing-btn" style="margin-top: 20px;">📝 בדוק את הכתיבה שלי</button>
+                        <div id="writing-feedback" style="display:none; margin-top: 15px;"></div>
+                        <button class="btn" id="mark-writing-complete" style="margin-top: 10px; display:none;">✓ המשך לדיבור</button>
 
                         <div style="text-align: center; margin-top: 15px;">
                             <p style="color: #666; font-size: 12px;">צריך לפחות 20 מילים</p>
@@ -806,7 +808,15 @@
                             </ul>
                         </div>
 
-                        <button class="btn" id="mark-speaking-complete">✓ סמן כהושלם</button>
+                        <div class="card" style="margin-top: 15px;">
+                            <h3 style="color: var(--primary); margin-bottom: 15px;">🎤 תרגול דיבור</h3>
+                            <p style="margin-bottom: 15px;">לחץ על המיקרופון וקרא את הקטע בקול רם:</p>
+                            <button class="btn" id="start-recording-btn" style="background: #e74c3c; width: 100%;">🎤 התחל הקלטה</button>
+                            <div id="recording-status" style="margin-top: 10px; color: #666; font-size: 14px; text-align: center;"></div>
+                            <div id="speech-transcript" style="display:none; margin-top: 15px; padding: 12px; background: #f0f4ff; border-radius: 10px; font-size: 13px; color: #333;"></div>
+                            <div id="speech-score" style="display:none; margin-top: 15px;"></div>
+                        </div>
+                        <button class="btn" id="mark-speaking-complete" style="margin-top: 15px; display:none;">✓ סמן כהושלם</button>
                     </div>
                 </div>
             </div>
@@ -1413,16 +1423,37 @@
                 document.getElementById('sample-answer').classList.toggle('show');
             };
 
-            document.getElementById('mark-writing-complete').onclick = () => {
+            // Writing check button
+            document.getElementById('check-writing-btn').onclick = () => {
                 const count = countWords(textarea.value);
                 if (count < 20) {
                     alert('צריך לפחות 20 מילים! כרגע יש לך ' + count);
-                } else {
-                    appState.writingComplete[appState.currentLesson] = true;
-                    saveState();
-                    alert('✓ כתיבה הושלמה! עברו ל-דיבור.');
-                    switchTab('speaking');
+                    return;
                 }
+                const score = scoreWriting(textarea.value, lessonNum);
+                window._writingScore = score.total;
+                const fb = document.getElementById('writing-feedback');
+                fb.style.display = 'block';
+                const emoji = score.total >= 80 ? '🌟' : score.total >= 60 ? '👍' : '💪';
+                fb.innerHTML = `<div style="background: ${score.total >= 70 ? '#e8f5e9' : '#fff3e0'}; border-radius: 12px; padding: 15px; text-align: right;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">${emoji}</div>
+                    <div style="font-size: 22px; font-weight: bold; color: ${score.total >= 70 ? '#2e7d32' : '#e65100'}; margin-bottom: 10px;">ציון: ${score.total}/100</div>
+                    <div style="font-size: 13px; color: #555; line-height: 1.8;">
+                        • אורך: ${score.wordCount} מילים (+${score.lengthScore})<br>
+                        • מילות שיעור: ${score.vocabUsed}/${score.vocabTotal} בשימוש (+${score.vocabScore})<br>
+                        • איכות כתיבה (+${score.qualScore})
+                    </div>
+                </div>`;
+                appState.writingComplete[appState.currentLesson] = true;
+                appState.writingScore = appState.writingScore || {};
+                appState.writingScore[appState.currentLesson] = score.total;
+                saveState();
+                document.getElementById('mark-writing-complete').style.display = 'block';
+                document.getElementById('check-writing-btn').style.display = 'none';
+            };
+
+            document.getElementById('mark-writing-complete').onclick = () => {
+                switchTab('speaking');
             };
         }
 
@@ -1437,21 +1468,138 @@
                 tipsList.appendChild(li);
             });
 
+            // Speech recognition setup
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recBtn = document.getElementById('start-recording-btn');
+            const statusEl = document.getElementById('recording-status');
+            const transcriptEl = document.getElementById('speech-transcript');
+            const scoreEl = document.getElementById('speech-score');
+            const completeBtn = document.getElementById('mark-speaking-complete');
+            let isRecording = false;
+            let recognition = null;
+
+            if (SpeechRecognition) {
+                recBtn.onclick = () => {
+                    if (isRecording) { recognition.stop(); return; }
+                    recognition = new SpeechRecognition();
+                    recognition.lang = 'en-US';
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    isRecording = true;
+                    recBtn.textContent = '⏹ עצור הקלטה';
+                    recBtn.style.background = '#666';
+                    statusEl.textContent = '🔴 מקליט...';
+                    recognition.start();
+
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        const speechScore = computeSpeechScore(transcript, speakingData.passage);
+                        transcriptEl.style.display = 'block';
+                        transcriptEl.innerHTML = '<strong>🗣️ מה שנשמע:</strong><br>' + transcript;
+                        const scoreEmoji = speechScore >= 80 ? '🌟' : speechScore >= 60 ? '👍' : '💪';
+                        scoreEl.style.display = 'block';
+                        scoreEl.innerHTML = `<div style="background: ${speechScore >= 70 ? '#e8f5e9' : '#fff3e0'}; border-radius: 12px; padding: 15px; text-align: center;">
+                            <div style="font-size: 28px;">${scoreEmoji}</div>
+                            <div style="font-size: 22px; font-weight: bold; color: ${speechScore >= 70 ? '#2e7d32' : '#e65100'};">דיוק: ${speechScore}%</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">${speechScore >= 80 ? '🙌 מעולה!' : speechScore >= 60 ? '👍 יפה, נסה שוב!' : '🔄 נסה שוב על הקטע'}</div>
+                        </div>`;
+                        appState.speakingComplete[appState.currentLesson] = true;
+                        appState.speakingScore = appState.speakingScore || {};
+                        appState.speakingScore[appState.currentLesson] = speechScore;
+                        saveState();
+                        completeBtn.style.display = 'block';
+                    };
+
+                    recognition.onerror = (e) => {
+                        statusEl.textContent = '❌ שגיאה: ' + e.error;
+                        isRecording = false;
+                        recBtn.textContent = '🎤 התחל הקלטה';
+                        recBtn.style.background = '#e74c3c';
+                        completeBtn.style.display = 'block';
+                    };
+
+                    recognition.onend = () => {
+                        isRecording = false;
+                        recBtn.textContent = '🔁 נסה שוב';
+                        recBtn.style.background = '#e74c3c';
+                        statusEl.textContent = '';
+                    };
+                };
+            } else {
+                recBtn.textContent = '❌ הדפדפן לא תומך בהקלטת קול';
+                recBtn.disabled = true;
+                recBtn.style.opacity = '0.5';
+                completeBtn.style.display = 'block';
+            }
+
             document.getElementById('mark-speaking-complete').onclick = () => {
                 appState.speakingComplete[appState.currentLesson] = true;
+                saveState();
                 completeLesson();
             };
         }
 
+        function computeSpeechScore(transcript, passage) {
+            const normalize = s => s.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length > 2);
+            const tWords = new Set(normalize(transcript));
+            const pWords = normalize(passage);
+            if (pWords.length === 0) return 0;
+            let matches = 0;
+            pWords.forEach(w => { if (tWords.has(w)) matches++; });
+            return Math.round((matches / pWords.length) * 100);
+        }
+
+        function scoreWriting(text, lessonNum) {
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+            const wordCount = words.length;
+            const lowerText = text.toLowerCase();
+            const lengthScore = Math.min(30, Math.floor(wordCount * 0.6));
+            const lessonVocab = (typeof lessonsData !== 'undefined' && lessonsData[lessonNum]) ? lessonsData[lessonNum].vocabulary : [];
+            let vocabUsed = 0;
+            lessonVocab.forEach(v => { if (lowerText.includes(v.word.toLowerCase())) vocabUsed++; });
+            const vocabScore = Math.min(40, vocabUsed * 8);
+            let qualScore = 0;
+            if (/[A-Z]/.test(text.charAt(0))) qualScore += 10;
+            if (/[.!?]/.test(text)) qualScore += 10;
+            if (wordCount >= 40) qualScore += 10;
+            const total = Math.min(100, lengthScore + vocabScore + qualScore);
+            return { total, wordCount, vocabUsed, vocabTotal: lessonVocab.length, lengthScore, vocabScore, qualScore };
+        }
+
         function completeLesson() {
-            if (!appState.completedLessons.includes(appState.currentLesson)) {
-                appState.completedLessons.push(appState.currentLesson);
+            const lessonNum = appState.currentLesson;
+            if (!appState.completedLessons.includes(lessonNum)) {
+                appState.completedLessons.push(lessonNum);
                 appState.streak = (appState.streak || 0) + 1;
             }
             appState.lastActiveDate = new Date().toISOString().split('T')[0];
             saveState();
-            alert('🎉 שיעור הושלם! צפה בהתקדמות שלך.');
-            switchScreen('home-screen');
+            const wScore = (appState.writingScore && appState.writingScore[lessonNum]) || 0;
+            const sScore = (appState.speakingScore && appState.speakingScore[lessonNum]) || 0;
+            const total = wScore > 0 && sScore > 0 ? Math.round((wScore + sScore) / 2) : wScore || sScore;
+            document.getElementById('modal-title').textContent = '🎉 שיעור ' + lessonNum + ' הושלם!';
+            document.getElementById('modal-scores').innerHTML =
+                '📝 כתיבה: ' + wScore + '/100<br>🎤 דיבור: ' + sScore + '%';
+            document.getElementById('modal-total').textContent = '🏆 ציון כולל: ' + total;
+            const nextLesson = lessonNum + 1;
+            const nextBtn = document.getElementById('next-lesson-btn');
+            if (nextLesson <= 10 && typeof lessonsData !== 'undefined' && lessonsData[nextLesson]) {
+                nextBtn.textContent = 'המשך לשיעור ' + nextLesson + ' →';
+                nextBtn.style.display = 'block';
+                nextBtn.onclick = () => {
+                    document.getElementById('completion-modal').style.display = 'none';
+                    appState.currentLesson = nextLesson;
+                    saveState();
+                    loadLesson(nextLesson);
+                };
+            } else {
+                nextBtn.style.display = 'none';
+            }
+            document.getElementById('home-after-lesson-btn').onclick = () => {
+                document.getElementById('completion-modal').style.display = 'none';
+                switchScreen('home-screen');
+            };
+            document.getElementById('completion-modal').style.display = 'flex';
         }
 
         // ==================== SATURDAY REVIEW ====================
@@ -1754,5 +1902,17 @@
         loadState();
         updateHomeScreen();
     </script>
+
+    <!-- LESSON COMPLETION MODAL -->
+    <div id="completion-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:20px; padding:30px; max-width:320px; width:90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="font-size:60px; margin-bottom:10px;">🎉</div>
+            <h2 id="modal-title" style="color: var(--primary); margin-bottom: 15px;">שיעור הושלם!</h2>
+            <div id="modal-scores" style="margin:15px 0; text-align:right; font-size:15px; line-height:2;"></div>
+            <div id="modal-total" style="font-size:28px; font-weight:bold; margin:10px 0; color: var(--primary);"></div>
+            <button class="btn" id="next-lesson-btn" style="width:100%; margin-bottom:10px; font-size:16px;">המשך לשיעור הבא →</button>
+            <button class="btn secondary" id="home-after-lesson-btn" style="width:100%;">חזור לדף הבית</button>
+        </div>
+    </div>
 </body>
 </html>
