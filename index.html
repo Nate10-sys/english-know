@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnglishPro - אפליקציה ללמוד אנגלית</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #6d28d9;
+            --accent: #8b5cf6;
+            --light: #f8fafc;
+            --dark: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: var(--light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            padding-bottom: 100px;
+            overflow-y: auto;
+        }
+
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            justify-content: space-around;
+            border-top: 2px solid var(--accent);
+            padding: 10px 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 0 5px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .nav-item.active {
+            background: var(--accent);
+            transform: scale(1.1);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--accent);
+        }
+
+        .card.hero {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+        }
+
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .card.hero h2 {
+            color: white;
+        }
+
+        .card p {
+            color: #666;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .card.hero p {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .streak-counter {
+            display: inline-block;
+            background: var(--warning);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(30, 58, 138, 0.3);
+        }
+
+        .btn.secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn.success {
+            background: var(--success);
+        }
+
+        .btn.warning {
+            background: var(--warning);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+            margin: 0;
+            padding: 10px 15px;
+            font-size: 13px;
+        }
+
+        /* Flashcard */
+        .flashcard-container {
+            perspective: 1000px;
+            height: 250px;
+            margin: 20px 0;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front,
+        .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            direction: ltr;
+        }
+
+        .flashcard-back {
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-word {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .flashcard-pos {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .flashcard-hint {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .flashcard-definition {
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .flashcard-example {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .flashcard-hebrew {
+            font-size: 14px;
+            direction: rtl;
+            margin-top: 15px;
+        }
+
+        .dot-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #d1d5db;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: var(--primary);
+            transform: scale(1.2);
+        }
+
+        .dot.completed {
+            background: var(--success);
+        }
+
+        /* Tabs */
+        .tabs-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #9ca3af;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-badge {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--success);
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+            text-align: center;
+            margin-left: 5px;
+        }
+
+        /* Writing */
+        .prompt-box {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: var(--dark);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            direction: ltr;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .tip-box {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #1e40af;
+            font-size: 13px;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            direction: ltr;
+            text-align: left;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        }
+
+        .word-count {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 5px;
+            text-align: left;
+        }
+
+        .sample-answer {
+            background: #f0fdf4;
+            border: 2px solid var(--success);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            direction: ltr;
+            text-align: left;
+            font-size: 13px;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .sample-answer.show {
+            display: block;
+        }
+
+        /* Reading */
+        .passage-box {
+            background: #f3e8ff;
+            color: var(--dark);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            direction: ltr;
+            text-align: left;
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .tips-list {
+            background: #eff6ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .tips-list li {
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+
+        /* Quiz */
+        .quiz-progress {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .quiz-progress p {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        .question-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .question-text {
+            direction: ltr;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option {
+            background: white;
+            border: 2px solid #e5e7eb;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            direction: ltr;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .option:hover {
+            border-color: var(--primary);
+            background: #f8fafc;
+        }
+
+        .option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .option.correct {
+            border-color: var(--success);
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .option.incorrect {
+            border-color: #ef4444;
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .feedback-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .feedback-message.correct {
+            background: #d1fae5;
+            color: var(--success);
+        }
+
+        .feedback-message.incorrect {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        /* Progress Screen */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .week-overview {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .week-overview h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .day-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+            direction: rtl;
+        }
+
+        .day-row:last-child {
+            border-bottom: none;
+        }
+
+        .day-checkbox {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .day-label {
+            flex: 1;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .day-check {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .card {
+                padding: 15px;
+            }
+
+            .flashcard-word {
+                font-size: 36px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+
+        .completion-badge {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        .phase-box {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--warning);
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .phase-locked {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .phase-box.completed {
+            background: #d1fae5;
+            border-left-color: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <!-- HOME SCREEN -->
+            <div class="screen active" id="home-screen">
+                <div class="card hero">
+                    <h2>שלום נתנאל! 👋</h2>
+                    <p>ברוכים הבאים ל-EnglishPro</p>
+                    <div class="streak-counter" id="streak-display">🔥 סדרה: 0 ימים</div>
+                </div>
+
+                <div class="card">
+                    <h2>📚 שיעור מוצע לכיום</h2>
+                    <p id="lesson-suggestion">טוען...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="daily-progress" style="width: 0%"></div>
+                    </div>
+                    <p style="font-size: 12px; margin-top: 10px;" id="progress-text">0 / 3</p>
+                    <button class="btn" id="start-lesson-btn">התחל שיעור</button>
+                </div>
+
+                <div class="card">
+                    <h2>📊 התקדמות השבוע</h2>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="weekly-progress" style="width: 0%"></div>
+                    </div>
+                    <p id="weekly-stats">0 שיעורים הושלמו</p>
+                </div>
+            </div>
+
+            <!-- LESSON SCREEN -->
+            <div class="screen" id="lesson-screen">
+                <div style="margin-bottom: 20px;">
+                    <h2 style="color: var(--primary); margin-bottom: 15px;" id="lesson-title">שיעור 1</h2>
+
+                    <!-- Tabs -->
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tab="vocab">📚 אוצר מילים</button>
+                        <button class="tab-btn" data-tab="writing">✍️ כתיבה</button>
+                        <button class="tab-btn" data-tab="speaking">🎤 דיבור</button>
+                    </div>
+
+                    <!-- Vocabulary Tab -->
+                    <div class="tab-content active" id="vocab-tab">
+                        <div class="dot-indicators" id="word-dots"></div>
+
+                        <div class="flashcard-container" id="flashcard-container">
+                            <div class="flashcard" id="flashcard">
+                                <div class="flashcard-front" id="flashcard-front">
+                                    <div class="flashcard-word" id="front-word">word</div>
+                                    <div class="flashcard-pos" id="front-pos">(noun)</div>
+                                    <div class="flashcard-hint">👆 לחץ כדי להפוך</div>
+                                </div>
+                                <div class="flashcard-back" id="flashcard-back">
+                                    <div class="flashcard-definition" id="back-def">Definition</div>
+                                    <div class="flashcard-example" id="back-example">"Example sentence"</div>
+                                    <div class="flashcard-hebrew" id="back-hebrew">Hebrew translation</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn success" id="got-it-btn">✓ קיבלתי</button>
+                            <button class="btn warning" id="review-btn">↻ חזור עליו</button>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 20px;">
+                            <p style="color: #666; font-size: 12px;" id="vocab-status">טוען מילים...</p>
+                        </div>
+                    </div>
+
+                    <!-- Writing Tab -->
+                    <div class="tab-content" id="writing-tab">
+                        <div class="prompt-box" id="writing-prompt">Writing prompt will appear here</div>
+                        <div class="tip-box" id="writing-tip">Tip will appear here</div>
+
+                        <div class="textarea-wrapper">
+                            <textarea id="writing-textarea" placeholder="כתוב כאן..."></textarea>
+                            <div class="word-count"><span id="word-count">0</span> מילים</div>
+                        </div>
+
+                        <button class="btn secondary" id="show-sample-btn">הצג תשובה לדוגמה</button>
+
+                        <div class="sample-answer" id="sample-answer"></div>
+
+                        <button class="btn" id="mark-writing-complete" style="margin-top: 20px;">✓ סמן כהושלם</button>
+
+                        <div style="text-align: center; margin-top: 15px;">
+                            <p style="color: #666; font-size: 12px;">צריך לפחות 20 מילים</p>
+                        </div>
+                    </div>
+
+                    <!-- Speaking Tab -->
+                    <div class="tab-content" id="speaking-tab">
+                        <div class="card">
+                            <h3 style="color: var(--primary); margin-bottom: 15px;">📖 קריאה</h3>
+                            <div class="passage-box" id="speaking-passage">Passage will appear here</div>
+                        </div>
+
+                        <div class="card">
+                            <h3 style="color: var(--primary); margin-bottom: 15px;">💡 טיפים</h3>
+                            <ul class="tips-list" id="speaking-tips">
+                                <li>Loading tips...</li>
+                            </ul>
+                        </div>
+
+                        <button class="btn" id="mark-speaking-complete">✓ סמן כהושלם</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SATURDAY REVIEW SCREEN -->
+            <div class="screen" id="saturday-screen">
+                <h2 style="color: var(--primary); margin-bottom: 20px;">📊 סקירה שבועית</h2>
+
+                <!-- Phase 1: Vocab Review -->
+                <div class="card" id="phase1">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">שלב 1: סקירת אוצר מילים</h3>
+                    <p style="margin-bottom: 15px; font-size: 13px; color: #666;">עבור דרך כל 25 המילים משבוע זה</p>
+
+                    <div class="dot-indicators" id="review-word-dots"></div>
+
+                    <div class="flashcard-container" id="review-flashcard-container">
+                        <div class="flashcard" id="review-flashcard">
+                            <div class="flashcard-front" id="review-flashcard-front">
+                                <div class="flashcard-word" id="review-front-word">word</div>
+                                <div class="flashcard-pos" id="review-front-pos">(noun)</div>
+                                <div class="flashcard-hint">👆 לחץ כדי להפוך</div>
+                            </div>
+                            <div class="flashcard-back" id="review-flashcard-back">
+                                <div class="flashcard-definition" id="review-back-def">Definition</div>
+                                <div class="flashcard-example" id="review-back-example">"Example sentence"</div>
+                                <div class="flashcard-hebrew" id="review-back-hebrew">Hebrew translation</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn success" id="review-got-it-btn">✓ קיבלתי</button>
+                        <button class="btn warning" id="review-again-btn">↻ חזור עליו</button>
+                    </div>
+                </div>
+
+                <!-- Phase 2: Quiz -->
+                <div class="card phase-locked" id="phase2">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">שלב 2: חידון (15 שאלות)</h3>
+                    <div class="quiz-progress" id="quiz-progress-display">
+                        <p>סיימו את שלב 1 כדי להתחיל</p>
+                    </div>
+                    <div id="quiz-questions-container"></div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <p style="color: #666; font-size: 13px;" id="quiz-score">Score will appear here</p>
+                    </div>
+                </div>
+
+                <!-- Phase 3: Extended Writing -->
+                <div class="card phase-locked" id="phase3">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">שלב 3: כתיבה מורחבת</h3>
+                    <p style="margin-bottom: 15px; font-size: 13px; color: #666;">סיימו את שלב 2 כדי להתחיל</p>
+                    <div class="prompt-box">כתוב על השבוע שלך באנגלית (150+ מילים). מה למדת? מה היה קשה? מה היה קל?</div>
+                    <textarea id="extended-writing" placeholder="כתוב כאן..." style="min-height: 200px;"></textarea>
+                    <div class="word-count" style="text-align: left;"><span id="extended-word-count">0</span> מילים</div>
+                    <button class="btn" id="mark-extended-complete">✓ סמן כהושלם</button>
+                </div>
+
+                <!-- Phase 4: Speaking Challenge -->
+                <div class="card phase-locked" id="phase4">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">שלב 4: אתגר דיבור</h3>
+                    <p style="margin-bottom: 15px; font-size: 13px; color: #666;">סיימו את שלב 3 כדי להתחיל</p>
+                    <div class="tip-box">תן לעצמך דקה לחשוב. ואז דבר לאורך 2-3 דקות. הקלט את עצמך אם אתה רוצה!</div>
+                    <div class="passage-box">
+                        <strong>נושא:</strong> "דבר על המטרה החשובה ביותר שלך בשנה הקרובה"<br><br>
+                        <strong>מבנה הדברים שלך:</strong><br>
+                        1. תן הקדמה קצרה - מה היא המטרה<br>
+                        2. למה זה חשוב לך<br>
+                        3. איך אתה מתכנן להשיג אותה<br>
+                        4. סיום - כמה אתה נחוש בדבר
+                    </div>
+                    <button class="btn" id="mark-speaking-challenge-complete">✓ סמן כהושלם</button>
+                </div>
+            </div>
+
+            <!-- PROGRESS SCREEN -->
+            <div class="screen" id="progress-screen">
+                <h2 style="color: var(--primary); margin-bottom: 20px;">📊 ההתקדמות שלי</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="completed-lessons">0</div>
+                        <div class="stat-label">שיעורים הושלמו</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="words-learned">0</div>
+                        <div class="stat-label">מילים למדתי</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="current-streak">0</div>
+                        <div class="stat-label">סדרה נוכחית</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="quiz-average">0%</div>
+                        <div class="stat-label">ממוצע חידון</div>
+                    </div>
+                </div>
+
+                <div class="week-overview">
+                    <h3>🗓️ סקירת שבועות</h3>
+                    <div id="week-days"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAVIGATION -->
+        <div class="nav-bar">
+            <div class="nav-item active" data-screen="home-screen">🏠<br>בית</div>
+            <div class="nav-item" data-screen="lesson-screen">📚<br>שיעור</div>
+            <div class="nav-item" data-screen="progress-screen">📊<br>התקדמות</div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== DATA ====================
+        const lessonsData = {
+            1: {
+                title: "שיעור 1: תיאור עצמך",
+                vocabulary: [
+                    { word: "confident", pos: "adj", definition: "feeling sure about yourself", example: "She is confident when speaking in public.", hebrew: "בטוח בעצמו" },
+                    { word: "hesitate", pos: "verb", definition: "to pause before doing something", example: "Don't hesitate to ask for help.", hebrew: "להסס" },
+                    { word: "express", pos: "verb", definition: "to show or say what you think/feel", example: "It's important to express your ideas clearly.", hebrew: "לבטא" },
+                    { word: "improve", pos: "verb", definition: "to get better at something", example: "I want to improve my English skills.", hebrew: "להשתפר" },
+                    { word: "current", pos: "adj", definition: "happening or existing now", example: "What is your current job?", hebrew: "נוכחי" }
+                ],
+                writing: {
+                    prompt: "Write 3-4 sentences about yourself: Who are you? What do you do? And what is one thing you want to improve in your life?",
+                    tip: "Use 'I am...', 'I work as...', 'I want to improve...' to get started.",
+                    sample: "My name is Netanel and I am a confident person who loves learning new things. I currently work as a groomer and I enjoy helping animals. However, I sometimes hesitate to speak English because I'm afraid of making mistakes. I want to improve my speaking skills so I can express myself better."
+                },
+                speaking: {
+                    passage: "A: Hello! I'm Netanel. Nice to meet you.\nB: Hi Netanel! I'm Alex. What do you do?\nA: I'm a pet groomer. I love working with animals and helping them look their best.\nB: That sounds wonderful! Are you confident in what you do?\nA: Yes, I am! I've been doing this for several years.",
+                    tips: ["Speak slowly and clearly", "Pause between sentences", "Try to sound natural", "Record yourself if possible!"]
+                }
+            },
+            2: {
+                title: "שיעור 2: עבודה וייצור",
+                vocabulary: [
+                    { word: "deadline", pos: "noun", definition: "the last time to finish something", example: "The deadline for this project is Friday.", hebrew: "מועד אחרון" },
+                    { word: "efficient", pos: "adj", definition: "working well without wasting time", example: "She is very efficient at her job.", hebrew: "יעיל" },
+                    { word: "manage", pos: "verb", definition: "to handle or be in charge of something", example: "Can you manage this project alone?", hebrew: "לנהל" },
+                    { word: "routine", pos: "noun", definition: "a regular set of activities", example: "My morning routine includes coffee and exercise.", hebrew: "שגרה" },
+                    { word: "priority", pos: "noun", definition: "something that is most important", example: "Health should be your top priority.", hebrew: "עדיפות" }
+                ],
+                writing: {
+                    prompt: "Describe your typical workday. What do you do first? What are your priorities? Use at least 4 sentences.",
+                    tip: "Use 'first', 'then', 'after that', 'finally' to connect ideas.",
+                    sample: "My workday usually starts early in the morning. First, I prepare my tools and equipment to make sure everything is ready. Then, I meet my first client and begin grooming their pet. Managing multiple appointments is a priority, so I try to be as efficient as possible. By the end of the day, I make sure to clean up and prepare for the next day's routine."
+                },
+                speaking: {
+                    passage: "My day starts at 7 AM. I prepare my tools and check my schedule. Then I meet my first client. I work with pets throughout the day. I have lunch at 1 PM. In the afternoon, I see more clients. I finish at 6 PM and clean my workspace.",
+                    tips: ["Stress the important words", "Use natural pauses", "Pronounce -tion words clearly", "Practice multiple times"]
+                }
+            },
+            3: {
+                title: "שיעור 3: רגשות וקשרים",
+                vocabulary: [
+                    { word: "anxious", pos: "adj", definition: "worried or nervous", example: "I feel anxious before important meetings.", hebrew: "חרד" },
+                    { word: "grateful", pos: "adj", definition: "thankful", example: "I'm grateful for my friends and family.", hebrew: "אסיר תודה" },
+                    { word: "awkward", pos: "adj", definition: "uncomfortable in a situation", example: "It was awkward when I forgot her name.", hebrew: "מביך" },
+                    { word: "genuine", pos: "adj", definition: "real, honest, sincere", example: "He gave a genuine smile.", hebrew: "אמיתי" },
+                    { word: "connect", pos: "verb", definition: "to build a relationship", example: "It's easy to connect with people who share your interests.", hebrew: "להתחבר" }
+                ],
+                writing: {
+                    prompt: "Write about a time you felt grateful. What happened? Who helped you? How did it make you feel? Write 4-5 sentences.",
+                    tip: "Use past tense: 'I felt...', 'It happened when...', 'I was grateful because...'",
+                    sample: "Last year, I had a difficult time at work. I made a big mistake with a client. My friend came to my rescue. He helped me fix the problem and supported me emotionally. I felt genuinely grateful for his kindness. That moment showed me how important real friendship is."
+                },
+                speaking: {
+                    passage: "A: How are you feeling about the presentation?\nB: Honestly, I'm anxious. I've never done this before.\nA: I understand. But you're going to do great!\nB: Really? I hope so. I'm grateful you believe in me.\nA: Of course! I think you're genuine and sincere. People will connect with you.",
+                    tips: ["Show emotion in your voice", "Use natural stress patterns", "Pause for effect", "Make eye contact (if speaking to someone)"]
+                }
+            },
+            4: {
+                title: "שיעור 4: טכנולוגיה וחיים מודרניים",
+                vocabulary: [
+                    { word: "digital", pos: "adj", definition: "related to computers/internet", example: "We live in a digital world.", hebrew: "דיגיטלי" },
+                    { word: "feature", pos: "noun", definition: "a special part of something", example: "My favorite feature is the camera.", hebrew: "תכונה" },
+                    { word: "access", pos: "verb/noun", definition: "to get/use something", example: "You need a password to access this file.", hebrew: "גישה" },
+                    { word: "privacy", pos: "noun", definition: "keeping personal info secret", example: "I care about my online privacy.", hebrew: "פרטיות" },
+                    { word: "update", pos: "verb", definition: "to make something newer", example: "Please update your app.", hebrew: "לעדכן" }
+                ],
+                writing: {
+                    prompt: "Technology changes our daily lives. Write about how technology has changed your life (good or bad). Give 3-4 examples.",
+                    tip: "Start with: 'Technology has changed my life because...' Then give examples.",
+                    sample: "Technology has completely changed my daily life. First, I use digital tools for my business. I can schedule appointments online and communicate with clients by email. Second, I use my smartphone to access information quickly. I can learn new grooming techniques from videos. Third, social media helps me connect with other pet professionals. However, I worry about privacy when using these apps."
+                },
+                speaking: {
+                    passage: "The digital world offers many features. We can access information instantly. We can update our social media. But we must protect our privacy. Technology is powerful but we need to be careful.",
+                    tips: ["Pronounce 'digital' correctly: DIJ-i-tul", "Stress 'privacy': PRIV-a-see", "Use clear pronunciation for technical words", "Speak at a comfortable pace"]
+                }
+            },
+            5: {
+                title: "שיעור 5: נסיעות וחקר",
+                vocabulary: [
+                    { word: "destination", pos: "noun", definition: "the place you're traveling to", example: "Paris is a popular destination.", hebrew: "יעד" },
+                    { word: "explore", pos: "verb", definition: "to travel and discover", example: "I want to explore Southeast Asia.", hebrew: "לחקור" },
+                    { word: "familiar", pos: "adj", definition: "something you know", example: "The city felt familiar.", hebrew: "מוכר" },
+                    { word: "local", pos: "adj/noun", definition: "belonging to a specific area", example: "Ask a local for directions.", hebrew: "מקומי" },
+                    { word: "recommend", pos: "verb", definition: "to suggest something good", example: "I recommend visiting the old city.", hebrew: "להמליץ" }
+                ],
+                writing: {
+                    prompt: "Describe your dream travel destination. Where is it? Why do you want to go there? What would you do? Write 4-5 sentences.",
+                    tip: "Use: 'My dream destination is...', 'I would like to explore...', 'I would recommend this place because...'",
+                    sample: "My dream destination is Japan. I want to explore Japanese culture and see famous landmarks like Mount Fuji. I'm familiar with Japanese cuisine from restaurants here, but I want to taste authentic food. I would like to connect with local people and learn about their traditions. Friends have recommended Tokyo and Kyoto as must-see places."
+                },
+                speaking: {
+                    passage: "I want to travel to Japan. Japan is my dream destination. Tokyo is a modern city with many features. I want to explore temples and gardens. I want to connect with local people. I would recommend this destination to anyone who loves culture.",
+                    tips: ["Pronounce 'destination' carefully", "Stress first syllable in 'explore'", "Practice word stress in 'recommend'", "Speak with enthusiasm about your interests"]
+                }
+            },
+            6: {
+                title: "שיעור 6: בריאות ורווחה",
+                vocabulary: [
+                    { word: "maintain", pos: "verb", definition: "keep at same level", example: "Hard to maintain a healthy diet.", hebrew: "לשמר" },
+                    { word: "physical", pos: "adj", definition: "relating to the body", example: "Physical exercise is important.", hebrew: "פיזי" },
+                    { word: "mental", pos: "adj", definition: "relating to the mind", example: "Mental health matters.", hebrew: "נפשי" },
+                    { word: "habit", pos: "noun", definition: "something done regularly", example: "Reading is a good habit.", hebrew: "הרגל" },
+                    { word: "balance", pos: "noun/verb", definition: "equal amounts", example: "Work-life balance is a challenge.", hebrew: "איזון" }
+                ],
+                writing: {
+                    prompt: "What healthy habits do you have? What habits would you like to build? Write about 2-3 habits and why they matter.",
+                    tip: "Use: 'I try to maintain...', 'It's important to balance...', 'I want to build the habit of...'",
+                    sample: "I try to maintain good health through regular exercise. I walk for 30 minutes most days, which is a physical habit I'm proud of. I also care about my mental health by spending time with friends. A habit I want to build is meditation. I believe balance between work and personal time is essential for wellbeing."
+                },
+                speaking: {
+                    passage: "Health is important. I maintain good habits. I exercise three times a week. I eat healthy foods. I also care about mental health. I spend time with friends. I meditate every morning. These habits help me feel better.",
+                    tips: ["Use natural rhythm when speaking", "Pause between thoughts", "Emphasize healthy habits", "Speak with confidence about yourself"]
+                }
+            },
+            7: {
+                title: "שיעור 7: ביטוי דעות",
+                vocabulary: [
+                    { word: "opinion", pos: "noun", definition: "what you believe", example: "In my opinion...", hebrew: "דעה" },
+                    { word: "argue", pos: "verb", definition: "to give reasons", example: "He argued that...", hebrew: "לטעון" },
+                    { word: "agree", pos: "verb", definition: "to have same view", example: "I agree with you.", hebrew: "להסכים" },
+                    { word: "disagree", pos: "verb", definition: "different view", example: "I disagree because...", hebrew: "לא להסכים" },
+                    { word: "support", pos: "verb", definition: "to back up an idea", example: "She supported with examples.", hebrew: "לתמוך" }
+                ],
+                writing: {
+                    prompt: "Do you think people work too much? Give your opinion with reasons. Do you agree or disagree with working long hours?",
+                    tip: "Start: 'In my opinion...' or 'I believe...' Then give 2-3 reasons.",
+                    sample: "In my opinion, many people work too much. I argue that work should not take over your whole life. Mental and physical health should be supported by having time to relax. I disagree with the idea that working long hours means you're productive. I believe balance is more important than hours worked. Time with family and friends should be a priority."
+                },
+                speaking: {
+                    passage: "I have an opinion about work. I believe people work too hard. I argue that health matters more than money. Do you agree? Or do you disagree? In my opinion, work-life balance is important. I support spending time with family.",
+                    tips: ["Use confident tone for opinions", "Pause before giving reasons", "Stress important words", "Practice expressing disagreement politely"]
+                }
+            },
+            8: {
+                title: "שיעור 8: כישורי תקשורת",
+                vocabulary: [
+                    { word: "communicate", pos: "verb", definition: "share info/feelings", example: "Good communication is key.", hebrew: "לתקשר" },
+                    { word: "fluent", pos: "adj", definition: "speak smoothly", example: "She is fluent in three languages.", hebrew: "שוטף" },
+                    { word: "misunderstand", pos: "verb", definition: "not understand correctly", example: "Don't misunderstand my words.", hebrew: "להבין לא נכון" },
+                    { word: "clarify", pos: "verb", definition: "make something clear", example: "Can you clarify that point?", hebrew: "להבהיר" },
+                    { word: "tone", pos: "noun", definition: "quality of voice/writing", example: "Use a friendly tone.", hebrew: "טון" }
+                ],
+                writing: {
+                    prompt: "Describe a time you had a misunderstanding with someone. What happened? How did you clarify? What did you learn?",
+                    tip: "Use past tense. Explain: 'They misunderstood when...', 'I clarified by...', 'Now I communicate better...'",
+                    sample: "I once misunderstood a client's request. I thought they wanted short hair, but they actually wanted to maintain their pet's long coat. We had to clarify through better communication. I learned to ask more questions. Now I use a friendly tone and confirm details before starting. This improved my ability to communicate effectively with clients."
+                },
+                speaking: {
+                    passage: "Communication is important. Sometimes people misunderstand each other. It's good to clarify your meaning. Use a friendly tone when you speak. Good communication makes life easier.",
+                    tips: ["Communicate clearly and slowly", "Use appropriate tone of voice", "Clarify your points", "Listen carefully to others"]
+                }
+            },
+            9: {
+                title: "שיעור 9: כסף וקניות",
+                vocabulary: [
+                    { word: "budget", pos: "noun/verb", definition: "plan for spending", example: "I need to budget my money.", hebrew: "תקציב" },
+                    { word: "afford", pos: "verb", definition: "have enough money", example: "Can you afford this?", hebrew: "להרשות לעצמו" },
+                    { word: "invest", pos: "verb", definition: "put money for future gain", example: "I want to invest in my education.", hebrew: "להשקיע" },
+                    { word: "expense", pos: "noun", definition: "money spent", example: "What are your monthly expenses?", hebrew: "הוצאה" },
+                    { word: "negotiate", pos: "verb", definition: "discuss to reach agreement", example: "I negotiated a better price.", hebrew: "לנהל משא ומתן" }
+                ],
+                writing: {
+                    prompt: "Write about your financial goals. Do you have a budget? What expenses do you have? What do you want to invest in?",
+                    tip: "Use: 'My budget includes...', 'I spend money on...', 'I want to invest in...'",
+                    sample: "I try to maintain a careful budget for my pet grooming business. My main expenses are tools, supplies, and rent for my workspace. I can afford to invest in new equipment to improve my business. I negotiated a good price when buying my grooming table. My financial goal is to save enough to open my own salon. I believe investing in my business will help me grow."
+                },
+                speaking: {
+                    passage: "Money is important to manage. I have a budget for my business. I track my expenses carefully. I negotiate prices with suppliers. I want to invest in better tools. Managing money helps me plan for the future.",
+                    tips: ["Pronounce 'invest' with stress on first syllable", "Say 'negotiate' clearly: nuh-GO-shee-ate", "Practice financial vocabulary", "Speak clearly about numbers and amounts"]
+                }
+            },
+            10: {
+                title: "שיעור 10: מטרות ועתיד",
+                vocabulary: [
+                    { word: "achieve", pos: "verb", definition: "successfully reach a goal", example: "I want to achieve my dreams.", hebrew: "להשיג" },
+                    { word: "goal", pos: "noun", definition: "something to accomplish", example: "My goal is to be fluent.", hebrew: "מטרה" },
+                    { word: "challenge", pos: "noun/verb", definition: "something difficult", example: "Learning English is a challenge.", hebrew: "אתגר" },
+                    { word: "progress", pos: "noun", definition: "movement toward goal", example: "I'm making good progress.", hebrew: "התקדמות" },
+                    { word: "determination", pos: "noun", definition: "will to keep going", example: "Determination is key to success.", hebrew: "נחישות" }
+                ],
+                writing: {
+                    prompt: "Write about your most important goal for next year. Why is it important? What challenges will you face? How will you achieve it?",
+                    tip: "Use: 'My goal is...', 'I will achieve this by...', 'The challenge is...', 'My determination will help me...'",
+                    sample: "My most important goal for next year is to become fluent in English. This is important because it will help me communicate better with international clients. The challenge is that I don't have much time to study with my busy work schedule. However, my determination is strong. I will achieve this goal by studying 30 minutes daily and practicing with English-speaking friends. I believe that progress comes with consistent effort."
+                },
+                speaking: {
+                    passage: "I have a goal. I want to achieve fluency in English. It's a challenge but I have determination. I make progress every day. I practice speaking with friends. I study vocabulary every morning. My goal will be achieved through hard work.",
+                    tips: ["Express goals with enthusiasm", "Use strong voice for determination", "Practice motivational speaking", "Speak with confidence about your future"]
+                }
+            }
+        };
+
+        // ==================== STATE MANAGEMENT ====================
+        let appState = {
+            currentScreen: 'home-screen',
+            currentLesson: 1,
+            completedLessons: [],
+            quizScores: { week1: 0, week2: 0 },
+            streak: 0,
+            lastActiveDate: null,
+            vocabProgress: {},
+            writingComplete: {},
+            speakingComplete: {},
+            quizAnswers: {}
+        };
+
+        const quizData = {
+            week1: [
+                { q: "What does 'confident' mean?", options: ["Worried", "Sure of yourself", "Tired", "Honest"], correct: 1 },
+                { q: "Choose correct: I ___ to ask for help", options: ["hesitate asking", "hesitate to ask", "hesitating to ask", "hesitate ask"], correct: 1 },
+                { q: "Which means 'thankful'?", options: ["anxious", "awkward", "grateful", "genuine"], correct: 2 },
+                { q: "My morning ___ includes coffee", options: ["deadline", "priority", "routine", "feature"], correct: 2 },
+                { q: "'efficient' means:", options: ["Slow", "Working well without waste", "Hard working", "Very busy"], correct: 1 },
+                { q: "'privacy' is a ___ issue", options: ["digital", "major", "local", "current"], correct: 0 },
+                { q: "'destination' means:", options: ["A vehicle", "Place you travel to", "Travel agency", "Local area"], correct: 1 },
+                { q: "Which sentence uses 'explore' correctly?", options: ["I explore my keys", "I want to explore Japan", "I explore quickly", "I explore tired"], correct: 1 },
+                { q: "'genuine' means:", options: ["Nervous", "Real and sincere", "Awkward", "Digital"], correct: 1 },
+                { q: "I need to ___ my phone", options: ["access", "explore", "update", "connect"], correct: 2 },
+                { q: "'hesitate' means:", options: ["To be confident", "To speak clearly", "To pause before acting", "To express yourself"], correct: 2 },
+                { q: "She meets every ___", options: ["routine", "deadline", "priority", "feature"], correct: 1 },
+                { q: "'recommend' means:", options: ["find", "suggest", "open", "visit"], correct: 1 },
+                { q: "Which uses 'anxious' correctly?", options: ["He felt anxious before the exam", "She is anxious at speaking", "I am anxious learning", "We anxious together"], correct: 0 },
+                { q: "'local' means:", options: ["Belonging to a specific area", "Famous", "Foreign", "Digital"], correct: 0 }
+            ],
+            week2: [
+                { q: "What does 'maintain' mean?", options: ["Break", "Keep at same level", "Start", "Forget"], correct: 1 },
+                { q: "'physical' relates to:", options: ["Mind", "Computer", "Body", "Money"], correct: 2 },
+                { q: "'mental' relates to:", options: ["Body", "Tools", "Mind", "Money"], correct: 2 },
+                { q: "A ___ is something done regularly", options: ["deadline", "habit", "destination", "privacy"], correct: 1 },
+                { q: "Work-life ___ is important", options: ["habit", "routine", "balance", "deadline"], correct: 2 },
+                { q: "'opinion' is:", options: ["Fact", "What you believe", "Question", "Answer"], correct: 1 },
+                { q: "To ___ means to give reasons", options: ["agree", "argue", "support", "communicate"], correct: 1 },
+                { q: "'fluent' means:", options: ["Fast", "Speak smoothly", "Silent", "Funny"], correct: 1 },
+                { q: "To ___ is to make clear", options: ["misunderstand", "clarify", "tone", "communicate"], correct: 1 },
+                { q: "'budget' is:", options: ["Money saved", "Plan for spending", "Investment", "Expense"], correct: 1 },
+                { q: "Can you ___ this trip?", options: ["budget", "afford", "invest", "negotiate"], correct: 1 },
+                { q: "'invest' means:", options: ["Spend money now", "Put money for future gain", "Save forever", "Give away"], correct: 1 },
+                { q: "What are ___ you pay?", options: ["income", "expenses", "budget", "goals"], correct: 1 },
+                { q: "To ___ is to discuss a price", options: ["invest", "afford", "negotiate", "expense"], correct: 2 },
+                { q: "What is your biggest ___?", options: ["income", "goal", "expense", "budget"], correct: 1 }
+            ]
+        };
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function loadState() {
+            const saved = localStorage.getItem('englishProState');
+            if (saved) {
+                appState = { ...appState, ...JSON.parse(saved) };
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('englishProState', JSON.stringify(appState));
+        }
+
+        function getTodayDay() {
+            const now = new Date();
+            return now.getDay();
+        }
+
+        function getSuggestedLesson() {
+            const day = getTodayDay();
+            if (day === 6) return 'saturday';
+            if (day === 0) return 1;
+            if (day === 1) return 2;
+            if (day === 2) return 3;
+            if (day === 3) return 4;
+            if (day === 4) return 5;
+            return 1;
+        }
+
+        function countWords(text) {
+            return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+        }
+
+        // ==================== SCREEN NAVIGATION ====================
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const screenId = item.getAttribute('data-screen');
+                switchScreen(screenId);
+            });
+        });
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            document.querySelector(`[data-screen="${screenId}"]`).classList.add('active');
+            appState.currentScreen = screenId;
+
+            if (screenId === 'home-screen') {
+                updateHomeScreen();
+            } else if (screenId === 'lesson-screen') {
+                loadLesson(appState.currentLesson);
+            } else if (screenId === 'progress-screen') {
+                updateProgressScreen();
+            }
+        }
+
+        // ==================== HOME SCREEN ====================
+        function updateHomeScreen() {
+            const streak = appState.streak || 0;
+            document.getElementById('streak-display').textContent = `🔥 סדרה: ${streak} ימים`;
+
+            const suggestedLesson = getSuggestedLesson();
+            if (suggestedLesson === 'saturday') {
+                document.getElementById('lesson-suggestion').innerHTML = `
+                    <strong>שיעור מיוחד: סקירת שבוע</strong><br>
+                    היום השבת! סקור את כל 25 המילים משבוע זה, עשה חידון, וכתוב יצירה מורחבת.
+                `;
+            } else {
+                const lesson = lessonsData[suggestedLesson];
+                document.getElementById('lesson-suggestion').innerHTML = `
+                    <strong>${lesson.title}</strong><br>
+                    3 חלקים: אוצר מילים, כתיבה, דיבור
+                `;
+            }
+
+            document.getElementById('start-lesson-btn').onclick = () => {
+                if (suggestedLesson === 'saturday') {
+                    switchScreen('saturday-screen');
+                    initSaturdayReview();
+                } else {
+                    appState.currentLesson = suggestedLesson;
+                    switchScreen('lesson-screen');
+                }
+            };
+
+            updateProgressBars();
+        }
+
+        function updateProgressBars() {
+            const completed = appState.completedLessons.length;
+            const isWeek1 = completed <= 5;
+            const maxLessons = isWeek1 ? 5 : 10;
+            const dailyPercent = (completed % 5) / 5 * 100;
+            const weeklyPercent = completed / maxLessons * 100;
+
+            document.getElementById('daily-progress').style.width = dailyPercent + '%';
+            document.getElementById('weekly-progress').style.width = weeklyPercent + '%';
+            document.getElementById('progress-text').textContent = `${completed % 5} / 5`;
+            document.getElementById('weekly-stats').textContent = `${completed} שיעורים הושלמו`;
+        }
+
+        // ==================== LESSON SCREEN ====================
+        function loadLesson(lessonNum) {
+            const lesson = lessonsData[lessonNum];
+            if (!lesson) return;
+
+            document.getElementById('lesson-title').textContent = lesson.title;
+            appState.currentLesson = lessonNum;
+
+            // Init vocab
+            initVocabulary(lesson.vocabulary, lessonNum);
+
+            // Init writing
+            initWriting(lesson.writing, lessonNum);
+
+            // Init speaking
+            initSpeaking(lesson.speaking, lessonNum);
+
+            // Switch to vocab tab
+            switchTab('vocab');
+        }
+
+        // TAB SWITCHING
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(tabId + '-tab').classList.add('active');
+        }
+
+        // VOCABULARY
+        let currentWordIndex = 0;
+        let vocabWords = [];
+        let vocabStatus = {};
+
+        function initVocabulary(words, lessonNum) {
+            vocabWords = words;
+            currentWordIndex = 0;
+            vocabStatus = appState.vocabProgress[lessonNum] || {};
+
+            updateWordDots();
+            showWord();
+        }
+
+        function updateWordDots() {
+            const dotsContainer = document.getElementById('word-dots');
+            dotsContainer.innerHTML = '';
+            vocabWords.forEach((w, i) => {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (i === currentWordIndex) dot.classList.add('active');
+                if (vocabStatus[i] === 'done') dot.classList.add('completed');
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function showWord() {
+            const word = vocabWords[currentWordIndex];
+            const card = document.getElementById('flashcard');
+            card.classList.remove('flipped');
+
+            document.getElementById('front-word').textContent = word.word;
+            document.getElementById('front-pos').textContent = `(${word.pos})`;
+            document.getElementById('back-def').textContent = word.definition;
+            document.getElementById('back-example').textContent = `"${word.example}"`;
+            document.getElementById('back-hebrew').textContent = word.hebrew;
+
+            updateWordDots();
+        }
+
+        document.getElementById('flashcard').addEventListener('click', function() {
+            this.classList.toggle('flipped');
+        });
+
+        document.getElementById('got-it-btn').addEventListener('click', () => {
+            vocabStatus[currentWordIndex] = 'done';
+            nextWord();
+        });
+
+        document.getElementById('review-btn').addEventListener('click', () => {
+            vocabStatus[currentWordIndex] = 'review';
+            nextWord();
+        });
+
+        function nextWord() {
+            if (currentWordIndex < vocabWords.length - 1) {
+                currentWordIndex++;
+                showWord();
+            } else {
+                completeVocabTab();
+            }
+        }
+
+        function completeVocabTab() {
+            appState.vocabProgress[appState.currentLesson] = vocabStatus;
+            saveState();
+            alert('✓ אוצר מילים הושלם! עברו לכרטיסיה הבאה.');
+            switchTab('writing');
+        }
+
+        // WRITING
+        function initWriting(writingData, lessonNum) {
+            document.getElementById('writing-prompt').textContent = writingData.prompt;
+            document.getElementById('writing-tip').textContent = `💡 ${writingData.tip}`;
+            document.getElementById('sample-answer').textContent = writingData.sample;
+
+            const textarea = document.getElementById('writing-textarea');
+            textarea.value = '';
+            textarea.addEventListener('input', () => {
+                const count = countWords(textarea.value);
+                document.getElementById('word-count').textContent = count;
+            });
+
+            document.getElementById('show-sample-btn').onclick = () => {
+                document.getElementById('sample-answer').classList.toggle('show');
+            };
+
+            document.getElementById('mark-writing-complete').onclick = () => {
+                const count = countWords(textarea.value);
+                if (count < 20) {
+                    alert('צריך לפחות 20 מילים! כרגע יש לך ' + count);
+                } else {
+                    appState.writingComplete[appState.currentLesson] = true;
+                    saveState();
+                    alert('✓ כתיבה הושלמה! עברו ל-דיבור.');
+                    switchTab('speaking');
+                }
+            };
+        }
+
+        // SPEAKING
+        function initSpeaking(speakingData, lessonNum) {
+            document.getElementById('speaking-passage').textContent = speakingData.passage;
+            const tipsList = document.getElementById('speaking-tips');
+            tipsList.innerHTML = '';
+            speakingData.tips.forEach(tip => {
+                const li = document.createElement('li');
+                li.textContent = tip;
+                tipsList.appendChild(li);
+            });
+
+            document.getElementById('mark-speaking-complete').onclick = () => {
+                appState.speakingComplete[appState.currentLesson] = true;
+                completeLesson();
+            };
+        }
+
+        function completeLesson() {
+            if (!appState.completedLessons.includes(appState.currentLesson)) {
+                appState.completedLessons.push(appState.currentLesson);
+                appState.streak = (appState.streak || 0) + 1;
+            }
+            appState.lastActiveDate = new Date().toISOString().split('T')[0];
+            saveState();
+            alert('🎉 שיעור הושלם! צפה בהתקדמות שלך.');
+            switchScreen('home-screen');
+        }
+
+        // ==================== SATURDAY REVIEW ====================
+        let saturdayPhase = 1;
+        let saturdayReviewWords = [];
+        let saturdayVocabStatus = {};
+        let saturdayCurrentWordIndex = 0;
+        let saturdayQuizIndex = 0;
+        let saturdayQuizScore = 0;
+
+        function initSaturdayReview() {
+            saturdayPhase = 1;
+            saturdayReviewWords = [];
+            saturdayVocabStatus = {};
+            saturdayCurrentWordIndex = 0;
+            saturdayQuizIndex = 0;
+            saturdayQuizScore = 0;
+
+            // Collect all words from 5 lessons of the current week
+            const startLesson = appState.completedLessons.length <= 5 ? 1 : 6;
+            const endLesson = startLesson + 4;
+            for (let i = startLesson; i <= endLesson; i++) {
+                if (lessonsData[i]) {
+                    saturdayReviewWords = saturdayReviewWords.concat(lessonsData[i].vocabulary);
+                }
+            }
+
+            updateSaturdayPhase();
+        }
+
+        function updateSaturdayPhase() {
+            const phase1 = document.getElementById('phase1');
+            const phase2 = document.getElementById('phase2');
+            const phase3 = document.getElementById('phase3');
+            const phase4 = document.getElementById('phase4');
+
+            if (saturdayPhase === 1) {
+                phase1.classList.remove('phase-locked', 'completed');
+                phase2.classList.add('phase-locked');
+                phase3.classList.add('phase-locked');
+                phase4.classList.add('phase-locked');
+                initSaturdayVocabReview();
+            } else if (saturdayPhase === 2) {
+                phase1.classList.add('completed');
+                phase2.classList.remove('phase-locked');
+                phase3.classList.add('phase-locked');
+                phase4.classList.add('phase-locked');
+                initSaturdayQuiz();
+            } else if (saturdayPhase === 3) {
+                phase2.classList.add('completed');
+                phase3.classList.remove('phase-locked');
+                phase4.classList.add('phase-locked');
+                initSaturdayExtendedWriting();
+            } else if (saturdayPhase === 4) {
+                phase3.classList.add('completed');
+                phase4.classList.remove('phase-locked');
+                initSaturdaySpeakingChallenge();
+            }
+        }
+
+        function initSaturdayVocabReview() {
+            saturdayCurrentWordIndex = 0;
+            saturdayVocabStatus = {};
+
+            const dotsContainer = document.getElementById('review-word-dots');
+            dotsContainer.innerHTML = '';
+            saturdayReviewWords.forEach((w, i) => {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (i === saturdayCurrentWordIndex) dot.classList.add('active');
+                dotsContainer.appendChild(dot);
+            });
+
+            showSaturdayWord();
+
+            document.getElementById('review-got-it-btn').onclick = () => {
+                saturdayVocabStatus[saturdayCurrentWordIndex] = 'done';
+                nextSaturdayWord();
+            };
+
+            document.getElementById('review-again-btn').onclick = () => {
+                saturdayVocabStatus[saturdayCurrentWordIndex] = 'review';
+                nextSaturdayWord();
+            };
+        }
+
+        function showSaturdayWord() {
+            const word = saturdayReviewWords[saturdayCurrentWordIndex];
+            const card = document.getElementById('review-flashcard');
+            card.classList.remove('flipped');
+
+            document.getElementById('review-front-word').textContent = word.word;
+            document.getElementById('review-front-pos').textContent = `(${word.pos})`;
+            document.getElementById('review-back-def').textContent = word.definition;
+            document.getElementById('review-back-example').textContent = `"${word.example}"`;
+            document.getElementById('review-back-hebrew').textContent = word.hebrew;
+
+            const dotsContainer = document.getElementById('review-word-dots');
+            dotsContainer.querySelectorAll('.dot').forEach((dot, i) => {
+                dot.classList.remove('active', 'completed');
+                if (i === saturdayCurrentWordIndex) dot.classList.add('active');
+                if (saturdayVocabStatus[i] === 'done') dot.classList.add('completed');
+            });
+        }
+
+        document.getElementById('review-flashcard').addEventListener('click', function() {
+            this.classList.toggle('flipped');
+        });
+
+        function nextSaturdayWord() {
+            if (saturdayCurrentWordIndex < saturdayReviewWords.length - 1) {
+                saturdayCurrentWordIndex++;
+                showSaturdayWord();
+            } else {
+                saturdayPhase = 2;
+                updateSaturdayPhase();
+            }
+        }
+
+        function initSaturdayQuiz() {
+            const week = appState.completedLessons.length <= 5 ? 'week1' : 'week2';
+            const quizzes = quizData[week];
+            saturdayQuizIndex = 0;
+            saturdayQuizScore = 0;
+
+            showSaturdayQuestion(quizzes);
+        }
+
+        function showSaturdayQuestion(quizzes) {
+            const week = appState.completedLessons.length <= 5 ? 'week1' : 'week2';
+            document.getElementById('quiz-progress-display').innerHTML = `<p>שאלה ${saturdayQuizIndex + 1} מתוך 15</p>`;
+
+            const container = document.getElementById('quiz-questions-container');
+            container.innerHTML = '';
+
+            const q = quizzes[saturdayQuizIndex];
+            const questionBox = document.createElement('div');
+            questionBox.className = 'question-box';
+
+            const qText = document.createElement('div');
+            qText.className = 'question-text';
+            qText.textContent = q.q;
+            questionBox.appendChild(qText);
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options';
+
+            q.options.forEach((opt, idx) => {
+                const option = document.createElement('div');
+                option.className = 'option';
+                option.textContent = opt;
+                option.onclick = () => selectQuizOption(idx, q.correct, quizzes);
+                optionsDiv.appendChild(option);
+            });
+
+            questionBox.appendChild(optionsDiv);
+            container.appendChild(questionBox);
+        }
+
+        function selectQuizOption(selected, correct, quizzes) {
+            const options = document.querySelectorAll('.option');
+            options.forEach((opt, idx) => {
+                if (idx === selected) {
+                    if (idx === correct) {
+                        opt.classList.add('correct');
+                        saturdayQuizScore++;
+                    } else {
+                        opt.classList.add('incorrect');
+                    }
+                }
+                if (idx === correct) {
+                    opt.classList.add('correct');
+                }
+                opt.style.pointerEvents = 'none';
+            });
+
+            setTimeout(() => {
+                saturdayQuizIndex++;
+                if (saturdayQuizIndex < 15) {
+                    showSaturdayQuestion(quizzes);
+                } else {
+                    const percent = Math.round(saturdayQuizScore / 15 * 100);
+                    document.getElementById('quiz-progress-display').innerHTML = `<p>✓ סיימת! הציון שלך: ${saturdayQuizScore}/15 (${percent}%)</p>`;
+                    document.getElementById('quiz-questions-container').innerHTML = '';
+
+                    const week = appState.completedLessons.length <= 5 ? 'week1' : 'week2';
+                    appState.quizScores[week] = saturdayQuizScore;
+                    saveState();
+
+                    saturdayPhase = 3;
+                    setTimeout(updateSaturdayPhase, 1500);
+                }
+            }, 1500);
+        }
+
+        function initSaturdayExtendedWriting() {
+            const textarea = document.getElementById('extended-writing');
+            textarea.value = '';
+            textarea.addEventListener('input', () => {
+                const count = countWords(textarea.value);
+                document.getElementById('extended-word-count').textContent = count;
+            });
+
+            document.getElementById('mark-extended-complete').onclick = () => {
+                const count = countWords(textarea.value);
+                if (count < 150) {
+                    alert('צריך לפחות 150 מילים! כרגע יש לך ' + count);
+                } else {
+                    saturdayPhase = 4;
+                    updateSaturdayPhase();
+                }
+            };
+        }
+
+        function initSaturdaySpeakingChallenge() {
+            document.getElementById('mark-speaking-challenge-complete').onclick = () => {
+                completeSaturdayReview();
+            };
+        }
+
+        function completeSaturdayReview() {
+            const week = appState.completedLessons.length <= 5 ? 1 : 2;
+            const startLesson = week === 1 ? 1 : 6;
+            const endLesson = startLesson + 4;
+
+            for (let i = startLesson; i <= endLesson; i++) {
+                if (!appState.completedLessons.includes(i)) {
+                    appState.completedLessons.push(i);
+                }
+            }
+
+            appState.streak = (appState.streak || 0) + 1;
+            appState.lastActiveDate = new Date().toISOString().split('T')[0];
+            saveState();
+
+            alert('🎉 סקירה שבועית הושלמה! גדול! 🌟');
+            switchScreen('home-screen');
+        }
+
+        // ==================== PROGRESS SCREEN ====================
+        function updateProgressScreen() {
+            const completed = appState.completedLessons.length;
+            const wordCount = completed * 5;
+            const streak = appState.streak || 0;
+            const week1Score = appState.quizScores.week1 || 0;
+            const week2Score = appState.quizScores.week2 || 0;
+            const avgQuizScore = week1Score && week2Score ? Math.round((week1Score + week2Score) / 2 / 15 * 100) : 0;
+
+            document.getElementById('completed-lessons').textContent = completed;
+            document.getElementById('words-learned').textContent = wordCount;
+            document.getElementById('current-streak').textContent = streak;
+            document.getElementById('quiz-average').textContent = (avgQuizScore || 0) + '%';
+
+            // Week overview
+            const weekDaysDiv = document.getElementById('week-days');
+            weekDaysDiv.innerHTML = '';
+
+            const week = completed <= 5 ? 1 : 2;
+            const startLesson = week === 1 ? 1 : 6;
+            const endLesson = startLesson + 4;
+            const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'];
+
+            dayNames.forEach((day, idx) => {
+                const lessonNum = startLesson + idx;
+                const isCompleted = appState.completedLessons.includes(lessonNum);
+                const row = document.createElement('div');
+                row.className = 'day-row';
+                row.innerHTML = `
+                    <input type="checkbox" class="day-checkbox" ${isCompleted ? 'checked' : ''} disabled>
+                    <span class="day-label">${day}</span>
+                    ${isCompleted ? '<span class="day-check">✓</span>' : ''}
+                `;
+                weekDaysDiv.appendChild(row);
+            });
+        }
+
+        // ==================== INITIALIZATION ====================
+        loadState();
+        updateHomeScreen();
+    </script>
+</body>
+</html>
