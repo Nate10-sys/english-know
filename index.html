@@ -264,6 +264,18 @@
             margin-bottom: 20px;
         }
 
+        .sound-btn {
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.6);
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 8px auto;
+            display: block;
+            transition: background 0.2s;
+        }
+        .sound-btn:hover { background: rgba(255,255,255,0.5); }
         .flashcard-hint {
             font-size: 12px;
             opacity: 0.7;
@@ -737,6 +749,7 @@
                                 <div class="flashcard-front" id="flashcard-front">
                                     <div class="flashcard-word" id="front-word">word</div>
                                     <div class="flashcard-pos" id="front-pos">(noun)</div>
+                                    <button class="sound-btn" onclick="event.stopPropagation();pronounceCurrentWord()" title="השמע שוב">🔊</button>
                                     <div class="flashcard-hint">👆 לחץ כדי להפוך</div>
                                 </div>
                                 <div class="flashcard-back" id="flashcard-back">
@@ -749,6 +762,7 @@
 
                         <div class="btn-group">
                             <button class="btn success" id="got-it-btn">✓ קיבלתי</button>
+                            <button class="btn secondary" id="prev-word-btn" onclick="prevWord()">← הקודם</button>
                             <button class="btn warning" id="review-btn">↻ חזור עליו</button>
                         </div>
 
@@ -813,6 +827,7 @@
                             <div class="flashcard-front" id="review-flashcard-front">
                                 <div class="flashcard-word" id="review-front-word">word</div>
                                 <div class="flashcard-pos" id="review-front-pos">(noun)</div>
+                                <button class="sound-btn" onclick="event.stopPropagation();pronounceSatWord()" title="השמע שוב">🔊</button>
                                 <div class="flashcard-hint">👆 לחץ כדי להפוך</div>
                             </div>
                             <div class="flashcard-back" id="review-flashcard-back">
@@ -825,6 +840,7 @@
 
                     <div class="btn-group">
                         <button class="btn success" id="review-got-it-btn">✓ קיבלתי</button>
+                        <button class="btn secondary" id="review-prev-btn" onclick="prevSatWord()">← הקודם</button>
                         <button class="btn warning" id="review-again-btn">↻ חזור עליו</button>
                     </div>
                 </div>
@@ -1321,6 +1337,8 @@
             card.classList.remove('flipped');
 
             document.getElementById('front-word').textContent = word.word;
+            const prevBtn = document.getElementById('prev-word-btn');
+            if (prevBtn) prevBtn.style.visibility = currentWordIndex === 0 ? 'hidden' : 'visible';
             document.getElementById('front-pos').textContent = `(${word.pos})`;
             document.getElementById('back-def').textContent = word.definition;
             document.getElementById('back-example').textContent = `"${word.example}"`;
@@ -1348,6 +1366,19 @@
             vocabStatus[currentWordIndex] = 'review';
             nextWord();
         });
+
+        function pronounceCurrentWord() {
+            if (window.speechSynthesis && vocabWords[currentWordIndex]) {
+                window.speechSynthesis.cancel();
+                const utt = new SpeechSynthesisUtterance(vocabWords[currentWordIndex].word);
+                utt.lang = 'en-US'; utt.rate = 0.85;
+                window.speechSynthesis.speak(utt);
+            }
+        }
+
+        function prevWord() {
+            if (currentWordIndex > 0) { currentWordIndex--; showWord(); }
+        }
 
         function nextWord() {
             if (currentWordIndex < vocabWords.length - 1) {
@@ -1513,6 +1544,8 @@
             card.classList.remove('flipped');
 
             document.getElementById('review-front-word').textContent = word.word;
+            const prevSatBtn = document.getElementById('review-prev-btn');
+            if (prevSatBtn) prevSatBtn.style.visibility = saturdayCurrentWordIndex === 0 ? 'hidden' : 'visible';
             document.getElementById('review-front-pos').textContent = `(${word.pos})`;
             document.getElementById('review-back-def').textContent = word.definition;
             document.getElementById('review-back-example').textContent = `"${word.example}"`;
@@ -1536,6 +1569,19 @@
         document.getElementById('review-flashcard').addEventListener('click', function() {
             this.classList.toggle('flipped');
         });
+
+        function pronounceSatWord() {
+            if (window.speechSynthesis && saturdayReviewWords[saturdayCurrentWordIndex]) {
+                window.speechSynthesis.cancel();
+                const utt = new SpeechSynthesisUtterance(saturdayReviewWords[saturdayCurrentWordIndex].word);
+                utt.lang = 'en-US'; utt.rate = 0.85;
+                window.speechSynthesis.speak(utt);
+            }
+        }
+
+        function prevSatWord() {
+            if (saturdayCurrentWordIndex > 0) { saturdayCurrentWordIndex--; showSaturdayWord(); }
+        }
 
         function nextSaturdayWord() {
             if (saturdayCurrentWordIndex < saturdayReviewWords.length - 1) {
