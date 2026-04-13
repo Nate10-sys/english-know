@@ -696,6 +696,54 @@
             background: #d1fae5;
             border-left-color: var(--success);
         }
+
+        /* Lessons list screen */
+        .lesson-card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-right: 5px solid #e5e7eb;
+        }
+        .lesson-card:hover { transform: translateX(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+        .lesson-card.completed { border-right-color: var(--success); }
+        .lesson-card.locked { opacity: 0.5; cursor: not-allowed; }
+        .lesson-card.available { border-right-color: var(--primary); }
+        .lesson-num {
+            width: 48px; height: 48px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: bold; flex-shrink: 0;
+        }
+        .lesson-num.completed { background: var(--success); color: white; }
+        .lesson-num.locked { background: #e5e7eb; color: #9ca3af; }
+        .lesson-num.available { background: var(--primary); color: white; }
+        .lesson-info { flex: 1; }
+        .lesson-info h3 { font-size: 15px; color: var(--dark); margin-bottom: 4px; }
+        .lesson-info p { font-size: 12px; color: #9ca3af; }
+        .lesson-status { font-size: 20px; }
+
+        /* XP bar */
+        .xp-bar-container { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+        .xp-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+        .level-badge { display: inline-block; background: linear-gradient(135deg, var(--warning), #f97316); color: white; padding: 3px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+
+        /* Quiz styles */
+        .quiz-question { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 2px solid #e5e7eb; }
+        .quiz-q-text { direction: ltr; text-align: left; font-size: 16px; font-weight: bold; color: var(--dark); margin-bottom: 15px; }
+        .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+        .quiz-opt { background: #f9fafb; border: 2px solid #e5e7eb; padding: 12px 16px; border-radius: 10px; cursor: pointer; direction: ltr; text-align: left; font-size: 14px; transition: all 0.2s; }
+        .quiz-opt:hover { border-color: var(--primary); background: #eff6ff; }
+        .quiz-opt.correct { border-color: var(--success); background: #d1fae5; color: #065f46; }
+        .quiz-opt.wrong { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
+        .quiz-opt.reveal-correct { border-color: var(--success); background: #d1fae5; }
+        .quiz-result { text-align: center; padding: 20px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 12px; color: white; margin-top: 15px; }
+
     </style>
 </head>
 <body>
@@ -728,6 +776,15 @@
                 </div>
             </div>
 
+            <!-- LESSONS LIST SCREEN -->
+            <div class="screen" id="lessons-screen">
+                <div style="margin-bottom: 20px;">
+                    <h2 style="color: var(--primary); margin-bottom: 5px;">📚 כל השיעורים</h2>
+                    <p style="color: #666; font-size: 13px;">בחר שיעור להתחיל</p>
+                </div>
+                <div id="lessons-list-container"></div>
+            </div>
+
             <!-- LESSON SCREEN -->
             <div class="screen" id="lesson-screen">
                 <div style="margin-bottom: 20px;">
@@ -736,6 +793,7 @@
                     <!-- Tabs -->
                     <div class="tabs-header">
                         <button class="tab-btn active" data-tab="vocab">📚 אוצר מילים</button>
+                        <button class="tab-btn" data-tab="quiz">🧠 קוויז</button>
                         <button class="tab-btn" data-tab="writing">✍️ כתיבה</button>
                         <button class="tab-btn" data-tab="speaking">🎤 דיבור</button>
                     </div>
@@ -768,6 +826,17 @@
 
                         <div style="text-align: center; margin-top: 20px;">
                             <p style="color: #666; font-size: 12px;" id="vocab-status">טוען מילים...</p>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Tab -->
+                    <div class="tab-content" id="quiz-tab">
+                        <div class="card" style="text-align:center; padding: 30px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">🧠</div>
+                            <h3 style="color: var(--primary); margin-bottom: 10px;">קוויז אוצר מילים</h3>
+                            <p style="color: #666; font-size: 13px; margin-bottom: 20px;">סיים תחילה את טאב אוצר מילים כדי לפתוח</p>
+                            <div id="quiz-locked-msg" style="background:#f3f4f6; border-radius:12px; padding:20px; color:#9ca3af;">🔒 סיים תחילה את הכרטיסיות</div>
+                            <div id="quiz-content" style="display:none; text-align:right;"></div>
                         </div>
                     </div>
 
@@ -898,6 +967,18 @@
             <div class="screen" id="progress-screen">
                 <h2 style="color: var(--primary); margin-bottom: 20px;">📊 ההתקדמות שלי</h2>
 
+                <!-- XP Bar -->
+                <div class="xp-bar-container">
+                    <div class="xp-label">
+                        <span><span class="level-badge" id="level-badge">🏅 רמה 1</span></span>
+                        <span id="xp-text" style="color: var(--primary);">0 XP</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="xp-bar" style="width: 0%;"></div>
+                    </div>
+                    <div style="font-size: 11px; color: #9ca3af; text-align: left; margin-top: 4px;" id="xp-to-next">0/100 XP לרמה הבאה</div>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-number" id="completed-lessons">0</div>
@@ -921,13 +1002,17 @@
                     <h3>🗓️ סקירת שבועות</h3>
                     <div id="week-days"></div>
                 </div>
+                <div class="week-overview" style="margin-top: 15px;">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">🏅 ציונים לפי שיעור</h3>
+                    <div id="lesson-scores-list"></div>
+                </div>
             </div>
         </div>
 
-        <!-- BOTTOM NAVIGATION -->
+                <!-- BOTTOM NAVIGATION -->
         <div class="nav-bar">
             <div class="nav-item active" data-screen="home-screen">🏠<br>בית</div>
-            <div class="nav-item" data-screen="lesson-screen">📚<br>שיעור</div>
+            <div class="nav-item" data-screen="lessons-screen">📚<br>שיעורים</div>
             <div class="nav-item" data-screen="progress-screen">📊<br>התקדמות</div>
         </div>
     </div>
@@ -1138,7 +1223,12 @@
             vocabProgress: {},
             writingComplete: {},
             speakingComplete: {},
-            quizAnswers: {}
+            quizAnswers: {},
+            xp: 0,
+            level: 1,
+            vocabQuizComplete: {},
+            writingScore: {},
+            speakingScore: {}
         };
 
         const quizData = {
@@ -1401,9 +1491,11 @@
 
         function completeVocabTab() {
             appState.vocabProgress[appState.currentLesson] = vocabStatus;
+            awardXP(15, '📚 אוצר מילים הושלם');
             saveState();
-            alert('✓ אוצר מילים הושלם! עברו לכרטיסיה הבאה.');
-            switchTab('writing');
+            // Unlock quiz tab and switch to it
+            initVocabQuiz(appState.currentLesson);
+            switchTab('quiz');
         }
 
         // WRITING
@@ -1898,7 +1990,177 @@
             });
         }
 
-        // ==================== INITIALIZATION ====================
+        // ==================== XP SYSTEM ====================
+        function awardXP(amount, reason) {
+            appState.xp = (appState.xp || 0) + amount;
+            appState.level = Math.floor(appState.xp / 100) + 1;
+            saveState();
+            showXPToast('+' + amount + ' XP — ' + reason);
+        }
+
+        function showXPToast(msg) {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed; top:20px; right:20px; background:linear-gradient(135deg,#1e3a8a,#6d28d9); color:white; padding:10px 16px; border-radius:20px; font-weight:bold; font-size:13px; z-index:99999; box-shadow:0 4px 15px rgba(0,0,0,0.3); animation: fadeIn 0.3s ease;';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function updateXPDisplay() {
+            const xp = appState.xp || 0;
+            const level = appState.level || 1;
+            const xpInLevel = xp % 100;
+            const el = document.getElementById('xp-bar');
+            if (el) el.style.width = xpInLevel + '%';
+            const xpText = document.getElementById('xp-text');
+            if (xpText) xpText.textContent = xp + ' XP';
+            const badge = document.getElementById('level-badge');
+            if (badge) badge.textContent = '🏅 רמה ' + level;
+            const toNext = document.getElementById('xp-to-next');
+            if (toNext) toNext.textContent = xpInLevel + '/100 XP לרמה הבאה';
+        }
+
+        // ==================== LESSONS SCREEN ====================
+        function initLessonsScreen() {
+            const container = document.getElementById('lessons-list-container');
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const lesson = lessonsData[i];
+                if (!lesson) continue;
+                const isCompleted = appState.completedLessons.includes(i);
+                const isAvailable = i === 1 || appState.completedLessons.includes(i - 1);
+                const isLocked = !isCompleted && !isAvailable;
+                const statusClass = isCompleted ? 'completed' : isAvailable ? 'available' : 'locked';
+                const statusIcon = isCompleted ? '✅' : isAvailable ? '▶️' : '🔒';
+                const wScore = (appState.writingScore && appState.writingScore[i]) || 0;
+                const sScore = (appState.speakingScore && appState.speakingScore[i]) || 0;
+                const scoreText = isCompleted ? ('⭐ ' + Math.round((wScore + sScore) / 2) + '/100') : (isAvailable ? 'התחל' : 'נעול');
+                const card = document.createElement('div');
+                card.className = 'lesson-card ' + statusClass;
+                card.innerHTML = `<div class="lesson-num ${statusClass}">${i}</div>
+                    <div class="lesson-info">
+                        <h3>${lesson.title}</h3>
+                        <p>${scoreText}</p>
+                    </div>
+                    <div class="lesson-status">${statusIcon}</div>`;
+                if (!isLocked) {
+                    card.onclick = () => {
+                        appState.currentLesson = i;
+                        saveState();
+                        loadLesson(i);
+                        switchScreen('lesson-screen');
+                    };
+                }
+                container.appendChild(card);
+            }
+        }
+
+        function updateLessonScores() {
+            const container = document.getElementById('lesson-scores-list');
+            if (!container) return;
+            if (appState.completedLessons.length === 0) {
+                container.innerHTML = '<p style="color:#9ca3af; font-size:13px;">עדיין לא הושלמו שיעורים</p>';
+                return;
+            }
+            container.innerHTML = appState.completedLessons.map(n => {
+                const wScore = (appState.writingScore && appState.writingScore[n]) || 0;
+                const sScore = (appState.speakingScore && appState.speakingScore[n]) || 0;
+                const avg = Math.round((wScore + sScore) / 2);
+                const color = avg >= 80 ? 'var(--success)' : avg >= 60 ? 'var(--warning)' : '#ef4444';
+                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f3f4f6;">
+                    <span style="font-size:14px;">שיעור ${n}</span>
+                    <span style="font-size:13px; color:#666;">📝${wScore} | 🎤${sScore}%</span>
+                    <span style="font-weight:bold; color:${color};">⭐ ${avg}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ==================== VOCAB QUIZ ====================
+        function initVocabQuiz(lessonNum) {
+            const quizContent = document.getElementById('quiz-content');
+            const quizLocked = document.getElementById('quiz-locked-msg');
+            if (!quizContent || !quizLocked) return;
+            quizLocked.style.display = 'none';
+            quizContent.style.display = 'block';
+
+            const lesson = lessonsData[lessonNum];
+            if (!lesson) return;
+            const vocab = lesson.vocabulary;
+
+            // Build all distractors pool from all lesson vocab
+            const allDefs = [];
+            for (let i = 1; i <= 10; i++) {
+                if (lessonsData[i]) lessonsData[i].vocabulary.forEach(v => allDefs.push(v.definition));
+            }
+
+            let correct = 0;
+            let total = vocab.length;
+            let answered = 0;
+
+            quizContent.innerHTML = '<div style="font-size:13px; color:#666; margin-bottom:15px;">' + total + ' שאלות — אחת על כל מילה</div>';
+
+            vocab.forEach((word, qi) => {
+                // Build options: correct + 3 random wrong defs
+                const wrongDefs = allDefs.filter(d => d !== word.definition);
+                const shuffledWrong = wrongDefs.sort(() => Math.random() - 0.5).slice(0, 3);
+                const options = [word.definition, ...shuffledWrong].sort(() => Math.random() - 0.5);
+
+                const qDiv = document.createElement('div');
+                qDiv.className = 'quiz-question';
+                qDiv.innerHTML = `<div class="quiz-q-text">What does <strong>"${word.word}"</strong> mean?</div>
+                    <div class="quiz-options" id="opts-${qi}"></div>
+                    <div id="feedback-${qi}" style="display:none; margin-top:10px; padding:10px; border-radius:8px; font-size:13px;"></div>`;
+
+                quizContent.appendChild(qDiv);
+
+                const optsDiv = qDiv.querySelector(`#opts-${qi}`);
+                options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-opt';
+                    btn.textContent = opt;
+                    btn.onclick = () => {
+                        // Disable all options
+                        optsDiv.querySelectorAll('.quiz-opt').forEach(b => { b.disabled = true; b.style.cursor = 'default'; });
+                        const feedback = qDiv.querySelector(`#feedback-${qi}`);
+                        feedback.style.display = 'block';
+                        if (opt === word.definition) {
+                            btn.classList.add('correct');
+                            feedback.style.background = '#d1fae5';
+                            feedback.style.color = '#065f46';
+                            feedback.textContent = '✅ נכון!';
+                            correct++;
+                        } else {
+                            btn.classList.add('wrong');
+                            feedback.style.background = '#fee2e2';
+                            feedback.style.color = '#991b1b';
+                            feedback.textContent = '❌ לא נכון. התשובה: ' + word.definition;
+                            // Highlight correct
+                            optsDiv.querySelectorAll('.quiz-opt').forEach(b => { if (b.textContent === word.definition) b.classList.add('reveal-correct'); });
+                        }
+                        answered++;
+                        if (answered === total) {
+                            const pct = Math.round((correct / total) * 100);
+                            appState.vocabQuizComplete = appState.vocabQuizComplete || {};
+                            appState.vocabQuizComplete[lessonNum] = pct;
+                            awardXP(Math.round(pct * 0.2), '🧠 קוויז אוצר מילים');
+                            saveState();
+                            const resultDiv = document.createElement('div');
+                            resultDiv.className = 'quiz-result';
+                            const emoji = pct >= 80 ? '🌟' : pct >= 60 ? '👍' : '💪';
+                            resultDiv.innerHTML = `<div style="font-size:36px;">${emoji}</div>
+                                <div style="font-size:24px; font-weight:bold; margin:10px 0;">${correct}/${total} נכונות</div>
+                                <div style="font-size:18px; margin-bottom:15px;">ציון: ${pct}%</div>
+                                <button class="btn" style="background:rgba(255,255,255,0.2); border:2px solid white; margin-top:0;" onclick="switchTab('writing')">המשך לכתיבה →</button>`;
+                            quizContent.appendChild(resultDiv);
+                        }
+                    };
+                    optsDiv.appendChild(btn);
+                });
+            });
+        }
+
+                // ==================== INITIALIZATION ====================
         loadState();
         updateHomeScreen();
     </script>
